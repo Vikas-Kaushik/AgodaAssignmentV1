@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2035
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hotels.API", "Hotels.API\Hotels.API.csproj", "{4194AD9D-3267-4B68-BD61-B71EDFCA69C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hotels.API", "Hotels.API\Hotels.API.csproj", "{4194AD9D-3267-4B68-BD61-B71EDFCA69C2}"
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{B715F1A3-0186-417B-B1EB-4110CAE46EA0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateLimitServices", "RateLimitService\RateLimitServices.csproj", "{186FEF0A-0431-4BCE-BF79-79F53A8FB913}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RateLimitServices", "RateLimitService\RateLimitServices.csproj", "{186FEF0A-0431-4BCE-BF79-79F53A8FB913}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateLimitServiceTest", "RateLimitServiceTest\RateLimitServiceTest.csproj", "{0421FED2-C3C9-4A91-AB77-B02FBEB273B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RateLimitServiceTest", "RateLimitServiceTest\RateLimitServiceTest.csproj", "{0421FED2-C3C9-4A91-AB77-B02FBEB273B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

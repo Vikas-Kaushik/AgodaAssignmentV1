@@ -2,6 +2,6 @@
 {
     public interface IRateLimitService
     {
-        bool IsLimitedApi { get; }
+        bool IsLimited(RateLimitedApis rateLimitedApi);
     }
 }

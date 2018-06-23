@@ -1,69 +1,29 @@
 using System;
 using System.Collections.Generic;
 using RateLimitServices;
+using RateLimitServices.Utilities;
+using RateLimitServiceTest.TestData;
 using Xunit;
 
 namespace RateLimitServiceTest
 {
     public class RateLimitServiceShould
     {
-        [Fact]
-        public void WorkAsExpected()
+        [Theory]
+        [ApiRequestPointsData]
+        public void WorkAsExpected(
+            uint max, ushort slot, ushort block, ushort now, params uint[] timeLine)
         {
-            var rateLimiter = new RateLimitService(10, 10, 5);
+            IRateLimitCache cache = new RateLimitCacheForCityApi(max, slot, block);
 
-            // 10 requests received at 0
-            IList<ushort> inputs = new List<ushort>(new ushort[10]);
-
-            foreach (var i in inputs)
+            foreach (var time in timeLine)
             {
-                Assert.True(rateLimiter.IsAllowed(i));
+                // Threshold not crossed for given time line
+                Assert.False(RateLimitService.IsThresholdCrossed(time, cache));
             }
 
-            // 11 request should fail
-            Assert.False(rateLimiter.IsAllowed(0));
-
-            //===========================
-            rateLimiter = new RateLimitService(10, 10, 5);
-
-            // 10 requests received at 0
-            inputs = new List<ushort>() { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 };
-
-            foreach (var i in inputs)
-            {
-                Assert.True(rateLimiter.IsAllowed(i));
-            }
-
-            // 11 request should fail
-            Assert.False(rateLimiter.IsAllowed(9));
-
-            //===========================
-            rateLimiter = new RateLimitService(10, 10, 5);
-
-            // 10 requests received at 0
-            inputs = new List<ushort>() { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 };
-
-            foreach (var i in inputs)
-            {
-                Assert.True(rateLimiter.IsAllowed(i));
-            }
-
-            // 11 request should fail
-            Assert.False(rateLimiter.IsAllowed(0));
-
-            //===========================
-            rateLimiter = new RateLimitService(10, 10, 5);
-
-            // 10 requests received at 0
-            inputs = new List<ushort>() { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 };
-
-            foreach (var i in inputs)
-            {
-                Assert.True(rateLimiter.IsAllowed(i));
-            }
-
-            // 11 request should fail
-            Assert.False(rateLimiter.IsAllowed(5));
+            // Threshold crossed now
+            Assert.True(RateLimitService.IsThresholdCrossed(now, cache));
         }
     }
 }

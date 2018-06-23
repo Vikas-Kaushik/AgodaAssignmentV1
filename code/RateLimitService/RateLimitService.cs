@@ -1,128 +1,136 @@
 ﻿using System;
+using Microsoft.Extensions.Configuration;
 using RateLimitServices.Utilities;
 
 namespace RateLimitServices
 {
     public class RateLimitService : IRateLimitService
     {
-        private readonly uint _maxRequestsInSlotSpan;
-        private readonly ushort _slotSpanInSeconds;
-        private readonly ushort _timeSpanToKeepBlockedInSeconds;
-        private uint _totalRequestsInSlotSpan;
-        private ushort _pastIndex;
-        private uint[] _requestCounts;
-        private uint _timeOfLastApiCall;
-        private uint _lastTimeWhenThresholdCrossed;        
-        private readonly object thisLock = new object();
+        private readonly IRateLimitCache _rateLimitCacheForCityApi;
+        private readonly IRateLimitCache _rateLimitCacheForRoomApi;
+        private readonly object _cityApiLock = new object();
+        private readonly object _roomApiLock = new object();
 
-        public RateLimitService(
-            uint maxRequestsInSlotSpan,
-            ushort slotSpanInSeconds,
-            ushort timeSpanToKeepBlockedInSeconds)
+        public RateLimitService(IConfiguration configuration)
         {
-            _maxRequestsInSlotSpan = maxRequestsInSlotSpan;
-            _slotSpanInSeconds = slotSpanInSeconds;
-            _timeSpanToKeepBlockedInSeconds = timeSpanToKeepBlockedInSeconds;
-
-            _totalRequestsInSlotSpan = 0;
-            _timeOfLastApiCall = 0;
-            _pastIndex = 0;
-
-            _requestCounts = new uint[_slotSpanInSeconds];
-            _requestCounts.Initialize();
+            _rateLimitCacheForCityApi = new RateLimitCacheForCityApi(configuration);
+            _rateLimitCacheForRoomApi = new RateLimitCacheForRoomApi(configuration);
         }
 
-        // ===================================================================
-        // Here's the Core Logic:
-        public bool IsAllowed(ushort presentIndex)
+        public bool IsLimited(RateLimitedApis rateLimitedApi)
         {
-            if (_pastIndex > presentIndex)
+            switch(rateLimitedApi)
             {
-                _totalRequestsInSlotSpan -= (_requestCounts[presentIndex] - 1);
-                _requestCounts[presentIndex] = 1;
-            }
-            else
-            {
-                _totalRequestsInSlotSpan += 1;
-                _requestCounts[presentIndex] += 1;
-            }
+                case RateLimitedApis.GetHotelsByCity:
+                    return IsLimitedApi(_rateLimitCacheForCityApi, _cityApiLock);
 
-            _pastIndex = presentIndex;
+                case RateLimitedApis.GetHotelsByRoom:
+                    return IsLimitedApi(_rateLimitCacheForRoomApi, _roomApiLock);
 
-            if (_totalRequestsInSlotSpan > _maxRequestsInSlotSpan)
-            {
-                _totalRequestsInSlotSpan -= 1;
-                return false;
+                default:
+                    return true;
             }
-
-            return true;
         }
 
-        // ===================================================================
-        public bool IsLimitedApi => _IsLimitedApi();
-
-        public bool _IsLimitedApi()
+        public bool IsLimitedApi(IRateLimitCache cache, Object lockMe)
         {
             // get now without milliseconds
             var now = UnixEpoch.Now;
 
-            lock (thisLock)
+            lock (lockMe)
             {
-                // If API has been blocked in last 5 seconds: return True 
-                if (ShouldBeKeptBlockedFor(now)) return true;
+                if (ShouldBeKeptBlockedFor(now, cache)) return true;
 
-                // If API has been already called, 10 times in last 10 seconds: return True
-                if (IsThresholdCrossed(now)) return true;
+                // This will be executed only after timeToBlock seconds of last time threshold crossed.
+                if (IsThresholdCrossed(now, cache)) return true;
             }
 
             // Don't limit the API call               
             return false;
         }
 
-        public bool IsThresholdCrossed(uint now)
-        {            
-            ushort presentIndex = Convert.ToUInt16(now % _slotSpanInSeconds);
+        /// <summary>
+        /// Tells if threshold is crossed now with current state of cache
+        /// 
+        /// Following ideas are important for this algorithm:
+        /// 1. Keep a circular queue (array) of request counts on indexes, where index represents
+        ///    a time in the slot span window. The same queue will be overlapped for future requests,
+        ///    size of the queue represents the time slot and the slot window can be begninning or ending
+        ///    at any index.
+        /// 2. Time always moves forward
+        ///    Beginning of slot (i.e. past) will always be behind the slot ending (i.e. present)
+        /// </summary>
+        /// <param name="cache">
+        /// cache.RequestCounts: Keeps request counts of calls in curentwindow
+        /// cache.TotalRequestsInSlotSpan: Keeps track of total number of request counts in current window,
+        /// current window is based on Now and Present Index
+        /// </param>
+        /// <returns></returns>
+        public static bool IsThresholdCrossed(uint now, IRateLimitCache cache)
+        {
+            // present index in circular queue "RequestCounts"
+            ushort presentIndex = Convert.ToUInt16(now % cache.SlotSpanInSeconds);
 
-            var secondsSinceLastRequest = now - _timeOfLastApiCall;
-
-            if (secondsSinceLastRequest > _slotSpanInSeconds)
+            if(now < cache.TimeOfLastApiCall)
             {
-                _totalRequestsInSlotSpan = 0;
-                _requestCounts.Initialize();
-                _pastIndex = 0;
-            }
-            
-            if(presentIndex > _pastIndex)
-            {
-                _totalRequestsInSlotSpan -= _requestCounts[presentIndex];
-                _requestCounts[presentIndex] = 1;
-                ++_totalRequestsInSlotSpan;
-            }
-            else
-            {                
-                ++_totalRequestsInSlotSpan;
+                // now is older than the time when last api was received.
+                throw new InvalidOperationException($"Time Machine usage is not allowed.");
             }
 
-            _pastIndex = presentIndex;
-            _timeOfLastApiCall = now;
+            var secondsSinceLastRequest = now - cache.TimeOfLastApiCall;
 
-            if(_totalRequestsInSlotSpan > _maxRequestsInSlotSpan)
+            // If it's been more than slot span, then clear the stale values
+            if (secondsSinceLastRequest > cache.SlotSpanInSeconds)
             {
-                --_totalRequestsInSlotSpan;
-                _lastTimeWhenThresholdCrossed = now;
+                // following properties become obsololete, out of the slot window, so reset
+                cache.TotalRequestsInSlotSpan = 0;
+                cache.RequestCounts.Initialize();
+                cache.PastIndex = 0;
+            }
+
+            // Fact: Time always moves forward and
+            // Past is always behind present
+            if (cache.PastIndex > presentIndex)
+            {
+                // If present is behind past, it's an overlap
+                // i.e. the request count value on present index is from past cycle,
+                // which means, it is not part of the current slot window
+                // Also it was part of TotalRequestsInSlotSpan, which is not anymore.
+                cache.TotalRequestsInSlotSpan -= cache.RequestCounts[presentIndex];
+
+                // make this request as first request on presentIndex, a new slot window is entered.
+                cache.RequestCounts[presentIndex] = 1;            
+            }
+
+            // Add a successful request in TotalRequestsInSlotSpan
+            ++cache.TotalRequestsInSlotSpan;
+
+            // present will become past 
+            cache.PastIndex = presentIndex;
+            cache.TimeOfLastApiCall = now;
+
+            if(cache.TotalRequestsInSlotSpan > cache.MaxRequestsInSlotSpan)
+            {
+                // As it was not a successful request, remove it from TotalRequestsInSlotSpan
+                --cache.TotalRequestsInSlotSpan;
+
+                // Update LastTimeWhenThresholdCrossed, so that all APIs will be blocked for next timeToBlock seconds
+                cache.LastTimeWhenThresholdCrossed = now;
+
                 return true;
             }
 
-            ++_requestCounts[presentIndex];
+            // Add a successful request at present index in RequestCounts
+            ++cache.RequestCounts[presentIndex];
 
             return false;
         }
 
-        public bool ShouldBeKeptBlockedFor(uint now)
+        public static bool ShouldBeKeptBlockedFor(uint now, IRateLimitCache cache)
         {
-            var timSpanSinceThreshHoldCrossedLastTime = now - _lastTimeWhenThresholdCrossed;
+            var timSpanSinceThreshHoldCrossedLastTime = now - cache.LastTimeWhenThresholdCrossed;
 
-            return timSpanSinceThreshHoldCrossedLastTime <= _timeSpanToKeepBlockedInSeconds;
+            return timSpanSinceThreshHoldCrossedLastTime <= cache.TimeSpanToKeepBlockedInSeconds;
         }
     }
 }

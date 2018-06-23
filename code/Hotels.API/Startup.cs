@@ -25,21 +25,7 @@ namespace Hotels.API
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            // ToDo: Get configuration parameters/numbers from appsetting.json
-            // Confgure the parameters
-            uint maxNumberOfRequests = Convert.ToUInt32(Configuration["RateLimitService:GetHotelsByCity:maxNumberOfRequests"]);
-            ushort slotSpan = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByCity:slotSpan"]);
-            ushort timeToBlock = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByCity:timeToBlock"]);
-            
-            services.AddSingleton<IRateLimitServiceForGetProjectByCity>(s => 
-                new RateLimitServiceForGetProjectByCity(maxNumberOfRequests, slotSpan, timeToBlock));
-
-            maxNumberOfRequests = Convert.ToUInt32(Configuration["RateLimitService:GetHotelsByRoom:maxNumberOfRequests"]);
-            slotSpan = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByRoom:slotSpan"]);
-            timeToBlock = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByRoom:timeToBlock"]);
-
-            services.AddSingleton<IRateLimitServiceForGetProjectByRoom>(s =>
-                new RateLimitServiceForGetProjectByRoom(maxNumberOfRequests, slotSpan, timeToBlock));
+            services.AddSingleton<IRateLimitService, RateLimitService>();          
 
             services.AddSingleton<IHotelRepository, HotelRepository>();
         }
@@ -59,8 +45,7 @@ namespace Hotels.API
             {
                 app.UseHsts();
             }
-
-            app.UseHttpsRedirection();
+            
             app.UseMvc();
         }
     }
