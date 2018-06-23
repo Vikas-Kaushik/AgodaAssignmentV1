@@ -20,8 +20,8 @@ namespace RateLimitServices
             ushort slotSpanInSeconds = 10,
             ushort timeSpanToKeepBlockedInSeconds = 5)
         {
-            _maxRequestsInSlotSpan = maxRequestsInSlotSpan;
-            _slotSpanInSeconds = slotSpanInSeconds;
+            _maxRequestsInSlotSpan = maxRequestsInSlotSpan == 0 ? 10 : maxRequestsInSlotSpan;
+            _slotSpanInSeconds = slotSpanInSeconds == 0 ? (ushort)10 : slotSpanInSeconds;
             _timeSpanToKeepBlockedInSeconds = timeSpanToKeepBlockedInSeconds;
 
             _totalRequestsInSlotSpan = 0;
