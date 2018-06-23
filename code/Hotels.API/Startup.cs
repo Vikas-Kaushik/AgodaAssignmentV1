@@ -1,9 +1,12 @@
-﻿using Hotels.API.Repositories;
+﻿using System;
+using Hotels.API.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
 using RateLimitServices;
 
 namespace Hotels.API
@@ -24,16 +27,30 @@ namespace Hotels.API
 
             // ToDo: Get configuration parameters/numbers from appsetting.json
             // Confgure the parameters
-            services.AddSingleton<IRateLimitServiceForGetProjectByCity>(s => new RateLimitServiceForGetProjectByCity(10, 10, 5));
+            uint maxNumberOfRequests = Convert.ToUInt32(Configuration["RateLimitService:GetHotelsByCity:maxNumberOfRequests"]);
+            ushort slotSpan = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByCity:slotSpan"]);
+            ushort timeToBlock = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByCity:timeToBlock"]);
+            
+            services.AddSingleton<IRateLimitServiceForGetProjectByCity>(s => 
+                new RateLimitServiceForGetProjectByCity(maxNumberOfRequests, slotSpan, timeToBlock));
 
-            services.AddSingleton<IRateLimitServiceForGetProjectByRoom>(s => new RateLimitServiceForGetProjectByRoom(10, 10, 5));
+            maxNumberOfRequests = Convert.ToUInt32(Configuration["RateLimitService:GetHotelsByRoom:maxNumberOfRequests"]);
+            slotSpan = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByRoom:slotSpan"]);
+            timeToBlock = Convert.ToUInt16(Configuration["RateLimitService:GetHotelsByRoom:timeToBlock"]);
+
+            services.AddSingleton<IRateLimitServiceForGetProjectByRoom>(s =>
+                new RateLimitServiceForGetProjectByRoom(maxNumberOfRequests, slotSpan, timeToBlock));
 
             services.AddSingleton<IHotelRepository, HotelRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            loggerFactory.AddConsole();
+            loggerFactory.AddDebug();
+            loggerFactory.AddNLog();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

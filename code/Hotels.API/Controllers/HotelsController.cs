@@ -2,6 +2,7 @@
 using System.Linq;
 using Hotels.API.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RateLimitServices;
 
 namespace Hotels.API.Controllers
@@ -10,6 +11,7 @@ namespace Hotels.API.Controllers
     [ApiController]
     public class HotelsController : ControllerBase
     {
+        private readonly ILogger<HotelsController> _logger;
         private readonly IRateLimitServiceForGetProjectByCity _rateLimitServiceForGetProjectByCity;
         private readonly IRateLimitServiceForGetProjectByRoom _rateLimitServiceForGetProjectByRoom;
         private readonly IHotelRepository _hotelRepository;
@@ -17,7 +19,8 @@ namespace Hotels.API.Controllers
         public HotelsController(
             IHotelRepository hotelRepository,
             IRateLimitServiceForGetProjectByCity rateLimitServiceForGetProjectByCity,
-            IRateLimitServiceForGetProjectByRoom rateLimitServiceForGetProjectByRoom)
+            IRateLimitServiceForGetProjectByRoom rateLimitServiceForGetProjectByRoom,
+            ILogger<HotelsController> logger)
         {
             _rateLimitServiceForGetProjectByCity = rateLimitServiceForGetProjectByCity ?? 
                 throw new ArgumentNullException(nameof(rateLimitServiceForGetProjectByCity));
@@ -26,6 +29,8 @@ namespace Hotels.API.Controllers
                 throw new ArgumentNullException(nameof(rateLimitServiceForGetProjectByRoom));
 
             _hotelRepository = hotelRepository ?? throw new ArgumentException(nameof(hotelRepository));
+
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
         }
 
         // Get /api/hotels/city/bangkok
@@ -35,7 +40,7 @@ namespace Hotels.API.Controllers
             if (_rateLimitServiceForGetProjectByCity.IsLimited)
             {
                 // TooManyRequests
-                return StatusCode(429);
+                return StatusCode(429, "Please try after some time.");
             }
 
             var cityHotels = _hotelRepository.GetAll()
