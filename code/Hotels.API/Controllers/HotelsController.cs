@@ -11,22 +11,16 @@ namespace Hotels.API.Controllers
     [ApiController]
     public class HotelsController : ControllerBase
     {
+        private readonly IRateLimitService _rateLimitService;
         private readonly ILogger<HotelsController> _logger;
-        private readonly IRateLimitServiceForGetProjectByCity _rateLimitServiceForGetProjectByCity;
-        private readonly IRateLimitServiceForGetProjectByRoom _rateLimitServiceForGetProjectByRoom;
         private readonly IHotelRepository _hotelRepository;
 
         public HotelsController(
             IHotelRepository hotelRepository,
-            IRateLimitServiceForGetProjectByCity rateLimitServiceForGetProjectByCity,
-            IRateLimitServiceForGetProjectByRoom rateLimitServiceForGetProjectByRoom,
+            IRateLimitService rateLimitService,
             ILogger<HotelsController> logger)
         {
-            _rateLimitServiceForGetProjectByCity = rateLimitServiceForGetProjectByCity ?? 
-                throw new ArgumentNullException(nameof(rateLimitServiceForGetProjectByCity));
-
-            _rateLimitServiceForGetProjectByRoom = rateLimitServiceForGetProjectByRoom ?? 
-                throw new ArgumentNullException(nameof(rateLimitServiceForGetProjectByRoom));
+            _rateLimitService = rateLimitService ?? throw new ArgumentNullException(nameof(rateLimitService));
 
             _hotelRepository = hotelRepository ?? throw new ArgumentException(nameof(hotelRepository));
 
@@ -37,7 +31,7 @@ namespace Hotels.API.Controllers
         [HttpGet("city/{city}", Name = "GetHotelsByCity")]
         public IActionResult GetHotelsByCity(string city)
         {
-            if (_rateLimitServiceForGetProjectByCity.IsLimited)
+            if (_rateLimitService.IsLimited(RateLimitedApis.GetHotelsByCity))
             {
                 // TooManyRequests
                 return StatusCode(429, "Please try after some time.");
@@ -54,10 +48,10 @@ namespace Hotels.API.Controllers
         [HttpGet("room/{roomType}", Name = "GetHotelsByRoom")]
         public IActionResult GetHotelsByRoom(string roomType)
         {
-            if (_rateLimitServiceForGetProjectByRoom.IsLimited)
+            if (_rateLimitService.IsLimited(RateLimitedApis.GetHotelsByRoom))
             {
                 // TooManyRequests
-                return StatusCode(429);
+                return StatusCode(429, "Please try after some time.");
             }
 
             var roomHotels = _hotelRepository.GetAll()

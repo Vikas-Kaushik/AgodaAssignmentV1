@@ -1,0 +1,174 @@
+{
+	"info": {
+		"_postman_id": "4a8313b1-5447-4905-914d-527317115d5f",
+		"name": "Hotels.API.Tests",
+		"description": "Test Hotels.API endpoints\nand rate limiting",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GetBangkokHotels",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "5bde93af-4b47-4b57-8eee-03a262a91446",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "e53fc474-104c-4481-b787-be2d3b329621",
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{protocol}}://{{server}}:{{port}}/{{hotelsByCityApi}}/bangkok",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"{{hotelsByCityApi}}",
+						"bangkok"
+					]
+				},
+				"description": "Wait for planning status of project to change from New to InProcess."
+			},
+			"response": []
+		},
+		{
+			"name": "GetDeluxeRoomHotels",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "5bde93af-4b47-4b57-8eee-03a262a91446",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "748e115f-79d2-4f07-b596-2fa854a16e47",
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{protocol}}://{{server}}:{{port}}/{{hotelsByRoomApi}}/deluxe",
+					"protocol": "{{protocol}}",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"{{hotelsByRoomApi}}",
+						"deluxe"
+					]
+				},
+				"description": "Wait for planning status of project to change from New to InProcess."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "faab140b-8ca5-4ec0-a7a8-c4194fbb5e87",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "615de156-0cff-44db-ad95-eaa14c351cb2",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "02c7369a-506e-419b-9fa1-8329b86125f9",
+			"key": "protocol",
+			"value": "http",
+			"type": "string",
+			"description": ""
+		},
+		{
+			"id": "e47ee801-4683-4aab-92db-f390a52d11be",
+			"key": "server",
+			"value": "localhost",
+			"type": "string",
+			"description": ""
+		},
+		{
+			"id": "d40738c5-7e29-4b4d-a158-ad6c9e61ce7f",
+			"key": "port",
+			"value": "5000",
+			"type": "string",
+			"description": ""
+		},
+		{
+			"id": "f5143271-7781-47d5-9a81-b4c2e303fcba",
+			"key": "hotelsByRoomApi",
+			"value": "api/hotels/room",
+			"type": "string",
+			"description": ""
+		},
+		{
+			"id": "816989ad-4858-479d-ac45-5a02cc9e843a",
+			"key": "hotelsByCityApi",
+			"value": "api/hotels/city",
+			"type": "string",
+			"description": ""
+		}
+	]
+}
