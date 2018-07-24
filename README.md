@@ -18,3 +18,6 @@ Just FYI:
 1. File: "AgodaAssignmentV1\code\RateLimitService\RateLimitService.cs" has the algorithm implemented 
 2. Use this to test it, File: "AgodaAssignmentV1\code\RateLimitServiceTest\RateLimitServiceShould.cs"
 3. Enpoints exposed are: "/api/hotels/city/{cityName}" and "/api/hotels/room/{roomType}"
+
+Here're more details:
+[embed]https://github.com/vkaushik/AgodaAssignmentV1/blob/master/ReadMeAlso.pdf[/embed]
