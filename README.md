@@ -20,4 +20,4 @@ Just FYI:
 3. Enpoints exposed are: "/api/hotels/city/{cityName}" and "/api/hotels/room/{roomType}"
 
 Here're more details:
-[embed] https://github.com/vkaushik/AgodaAssignmentV1/blob/master/ReadMeAlso.pdf [/embed]
+[embed] https://raw.githubusercontent.com/vkaushik/AgodaAssignmentV1/master/ReadMeAlso.pdf [/embed]
